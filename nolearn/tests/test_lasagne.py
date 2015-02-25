@@ -150,6 +150,7 @@ def test_clone():
     from nolearn.lasagne import NeuralNet
     from nolearn.lasagne import negative_log_likelihood
     from nolearn.lasagne import BatchIterator
+    from nolearn.lasagne import LossObjective
 
     params = dict(
         layers=[
@@ -169,7 +170,7 @@ def test_clone():
         update_momentum=0.9,
 
         regression=False,
-        loss=negative_log_likelihood,
+        objective=LossObjective(negative_log_likelihood),
         batch_iterator_train=BatchIterator(batch_size=100),
         X_tensor_type=T.matrix,
         y_tensor_type=T.ivector,
@@ -190,6 +191,8 @@ def test_clone():
         'batch_iterator_train',
         'batch_iterator_test',
         'output_nonlinearity',
+        'loss',
+        'objective'
         ):
         for par in (params, params1, params2):
             par.pop(ignore, None)
@@ -289,16 +292,19 @@ class TestInitializeLayers:
             )
         out = nn.initialize_layers(nn.layers)
 
-        input.assert_called_with(shape=(10, 10))
+        input.assert_called_with(
+            name='input', shape=(10, 10))
         nn.layers_['input'] is input.return_value
 
-        hidden1.assert_called_with(input.return_value, some='param')
+        hidden1.assert_called_with(
+            input.return_value, name='hidden1', some='param')
         nn.layers_['hidden1'] is hidden1.return_value
 
-        hidden2.assert_called_with(hidden1.return_value)
+        hidden2.assert_called_with(
+            hidden1.return_value, name='hidden2')
         nn.layers_['hidden2'] is hidden2.return_value
 
-        output.assert_called_with(hidden2.return_value)
+        output.assert_called_with(hidden2.return_value, name='output')
 
         assert out is nn.layers_['output']
 
@@ -319,8 +325,9 @@ class TestInitializeLayers:
             )
         nn.initialize_layers(nn.layers)
 
-        input.assert_called_with(shape=(10, 10))
-        hidden1.assert_called_with(input.return_value)
-        hidden2.assert_called_with(input.return_value)
-        concat.assert_called_with([hidden1.return_value, hidden2.return_value])
-        output.assert_called_with(concat.return_value)
+        input.assert_called_with(name='input', shape=(10, 10))
+        hidden1.assert_called_with(input.return_value, name='hidden1')
+        hidden2.assert_called_with(input.return_value, name='hidden2')
+        concat.assert_called_with([hidden1.return_value, hidden2.return_value],
+                                  name='concat')
+        output.assert_called_with(concat.return_value, name='output')
