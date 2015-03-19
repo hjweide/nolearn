@@ -83,6 +83,7 @@ class NeuralNet(BaseEstimator):
         use_label_encoder=False,
         on_epoch_finished=(),
         on_training_finished=(),
+        pre_proc_scaler=None,
         more_params=None,
         verbose=0,
         **kwargs
@@ -113,6 +114,7 @@ class NeuralNet(BaseEstimator):
         self.on_epoch_finished = on_epoch_finished
         self.on_training_finished = on_training_finished
         self.more_params = more_params or {}
+        self.pre_proc_scaler = pre_proc_scaler
         self.verbose = verbose
 
         for key in kwargs.keys():
@@ -340,6 +342,8 @@ class NeuralNet(BaseEstimator):
             func(self, self.train_history_)
 
     def predict_proba(self, X):
+        if self.pre_proc_scaler is not None:
+            X = self.pre_proc_scaler.transform(X)
         probas = []
         for Xb, yb in self.batch_iterator_test(X):
             probas.append(self.predict_iter_(Xb))
@@ -371,6 +375,10 @@ class NeuralNet(BaseEstimator):
         else:
             X_train, y_train = X, y
             X_valid, y_valid = X[len(X):], y[len(y):]
+
+        if self.pre_proc_scaler is not None:
+            X_train = self.pre_proc_scaler.fit_transform(X_train)
+            X_valid = self.pre_proc_scaler.transform(X_valid)
 
         return X_train, X_valid, y_train, y_valid
 
